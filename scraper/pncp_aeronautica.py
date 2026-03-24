@@ -51,16 +51,13 @@ def buscar_por_modalidade(data_consulta: date, codigo_modalidade: int) -> list[d
         try:
             req = Request(url, headers={"Accept": "application/json"})
             with urlopen(req, timeout=30) as resp:
-                dados = json.loads(resp.read().decode("utf-8"))
-        except HTTPError as e:
-            if e.code == 404:
-                break
-            if e.code == 400:
-                break
-            print(f"  Erro HTTP {e.code} na modalidade {codigo_modalidade}, página {pagina}")
+                corpo = resp.read().decode("utf-8").strip()
+                if not corpo:
+                    break
+                dados = json.loads(corpo)
+        except (HTTPError, URLError):
             break
-        except URLError as e:
-            print(f"  Erro de conexão na modalidade {codigo_modalidade}: {e.reason}")
+        except json.JSONDecodeError:
             break
 
         registros = dados.get("data", dados) if isinstance(dados, dict) else dados
