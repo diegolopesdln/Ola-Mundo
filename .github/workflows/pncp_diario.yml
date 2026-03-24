@@ -2,8 +2,8 @@ name: Busca Diária - Licitações Aeronáutica (PNCP)
 
 on:
   schedule:
-    # 00:20 horário de Brasília = 03:20 UTC
-    - cron: "20 3 * * *"
+    # 09:00 horário de Brasília = 12:00 UTC
+    - cron: "0 12 * * *"
   workflow_dispatch: # permite execução manual
 
 env:
