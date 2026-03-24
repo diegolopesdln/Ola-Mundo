@@ -56,9 +56,7 @@ def buscar_por_modalidade(data_consulta: date, codigo_modalidade: int) -> list[d
                 if not corpo:
                     break
                 dados = json.loads(corpo)
-        except (HTTPError, URLError):
-            break
-        except json.JSONDecodeError:
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, OSError):
             break
 
         registros = dados.get("data", dados) if isinstance(dados, dict) else dados
