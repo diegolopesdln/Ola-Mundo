@@ -1,0 +1,32 @@
+name: Busca Diária - Licitações Aeronáutica (PNCP)
+
+on:
+  schedule:
+    # 9h horário de Brasília = 12:00 UTC
+    - cron: "0 12 * * 1-5"
+  workflow_dispatch: # permite execução manual
+
+jobs:
+  buscar-licitacoes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Executar robô de busca
+        run: python scraper/pncp_aeronautica.py
+
+      - name: Upload resultado como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-licitacoes-${{ github.run_id }}
+          path: resultado_*.json
+          retention-days: 30
+          if-no-files-found: ignore
