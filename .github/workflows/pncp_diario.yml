@@ -6,6 +6,9 @@ on:
     - cron: "0 12 * * 1-5"
   workflow_dispatch: # permite execução manual
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   buscar-licitacoes:
     runs-on: ubuntu-latest
