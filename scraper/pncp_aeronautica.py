@@ -174,17 +174,6 @@ def gerar_html(contratacoes: list[dict], data_consulta: date) -> str:
       align-items: center;
       justify-content: space-between;
     }}
-    .header-left {{
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }}
-    .header-logo {{
-      width: 72px;
-      height: 72px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-    }}
     .header h1 {{
       font-size: 22px;
       font-weight: 600;
@@ -294,12 +283,9 @@ def gerar_html(contratacoes: list[dict], data_consulta: date) -> str:
 </head>
 <body>
   <div class="header">
-    <div class="header-left">
-      <img class="header-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Coat_of_arms_of_the_Brazilian_Air_Force.svg/200px-Coat_of_arms_of_the_Brazilian_Air_Force.svg.png" alt="Gládio Alado - Força Aérea Brasileira">
-      <div>
-        <h1>Licitações do Comando da Aeronáutica</h1>
-        <div class="subtitle">Portal Nacional de Contratações Públicas (PNCP) &mdash; {data_fmt}</div>
-      </div>
+    <div>
+      <h1>Licitações do Comando da Aeronáutica</h1>
+      <div class="subtitle">Portal Nacional de Contratações Públicas (PNCP) &mdash; {data_fmt}</div>
     </div>
     <div class="stats">
       <div class="count">{total}</div>
