@@ -5,10 +5,11 @@ Consulta diariamente as contratações publicadas no dia atual.
 
 import json
 import sys
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
+FUSO_BRASILIA = timezone(timedelta(hours=-3))
 PNCP_API_BASE = "https://pncp.gov.br/api/consulta/v1"
 CNPJ_COMANDO_AERONAUTICA = "00394429000100"
 TAMANHO_PAGINA = 50
@@ -108,7 +109,7 @@ def formatar_contratacao(c: dict) -> str:
 
 
 def main():
-    hoje = date.today()
+    hoje = datetime.now(FUSO_BRASILIA).date()
     print(f"=== Licitações do Comando da Aeronáutica - PNCP ===")
     print(f"Data de consulta: {hoje.strftime('%d/%m/%Y')}\n")
 
