@@ -13,11 +13,28 @@ PNCP_API_BASE = "https://pncp.gov.br/api/consulta/v1"
 CNPJ_COMANDO_AERONAUTICA = "00394429000100"
 TAMANHO_PAGINA = 50
 
+# Códigos de modalidade de contratação no PNCP
+MODALIDADES = {
+    1: "Leilão - Eletrônico",
+    2: "Diálogo Competitivo",
+    3: "Concurso",
+    4: "Concorrência - Eletrônica",
+    5: "Concorrência - Presencial",
+    6: "Pregão - Eletrônico",
+    7: "Pregão - Presencial",
+    8: "Dispensa de Licitação",
+    9: "Inexigibilidade",
+    10: "Manifestação de Interesse",
+    11: "Pré-qualificação",
+    12: "Credenciamento",
+    13: "Leilão - Presencial",
+}
 
-def buscar_contratacoes(data_consulta: date) -> list[dict]:
-    """Busca todas as contratações do Comando da Aeronáutica publicadas na data informada."""
+
+def buscar_por_modalidade(data_consulta: date, codigo_modalidade: int) -> list[dict]:
+    """Busca contratações de uma modalidade específica."""
     data_formatada = data_consulta.strftime("%Y%m%d")
-    todas_contratacoes = []
+    resultados = []
     pagina = 1
 
     while True:
@@ -25,6 +42,7 @@ def buscar_contratacoes(data_consulta: date) -> list[dict]:
             f"{PNCP_API_BASE}/contratacoes/publicacao"
             f"?dataInicial={data_formatada}"
             f"&dataFinal={data_formatada}"
+            f"&codigoModalidadeContratacao={codigo_modalidade}"
             f"&cnpj={CNPJ_COMANDO_AERONAUTICA}"
             f"&tamanhoPagina={TAMANHO_PAGINA}"
             f"&pagina={pagina}"
@@ -37,10 +55,12 @@ def buscar_contratacoes(data_consulta: date) -> list[dict]:
         except HTTPError as e:
             if e.code == 404:
                 break
-            print(f"Erro HTTP {e.code} ao consultar página {pagina}: {e.reason}")
+            if e.code == 400:
+                break
+            print(f"  Erro HTTP {e.code} na modalidade {codigo_modalidade}, página {pagina}")
             break
         except URLError as e:
-            print(f"Erro de conexão ao consultar página {pagina}: {e.reason}")
+            print(f"  Erro de conexão na modalidade {codigo_modalidade}: {e.reason}")
             break
 
         registros = dados.get("data", dados) if isinstance(dados, dict) else dados
@@ -49,14 +69,27 @@ def buscar_contratacoes(data_consulta: date) -> list[dict]:
             break
 
         if isinstance(registros, list):
-            todas_contratacoes.extend(registros)
+            resultados.extend(registros)
             if len(registros) < TAMANHO_PAGINA:
                 break
         else:
-            todas_contratacoes.append(registros)
+            resultados.append(registros)
             break
 
         pagina += 1
+
+    return resultados
+
+
+def buscar_contratacoes(data_consulta: date) -> list[dict]:
+    """Busca todas as contratações do Comando da Aeronáutica publicadas na data informada."""
+    todas_contratacoes = []
+
+    for codigo, nome in MODALIDADES.items():
+        resultados = buscar_por_modalidade(data_consulta, codigo)
+        if resultados:
+            print(f"  {nome}: {len(resultados)} resultado(s)")
+            todas_contratacoes.extend(resultados)
 
     return todas_contratacoes
 
