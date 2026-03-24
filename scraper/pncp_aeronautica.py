@@ -5,6 +5,7 @@ Consulta diariamente as contratações publicadas no dia atual.
 
 import json
 import html
+import os
 import sys
 from datetime import date, datetime, timezone, timedelta
 from urllib.request import urlopen, Request
@@ -173,6 +174,17 @@ def gerar_html(contratacoes: list[dict], data_consulta: date) -> str:
       align-items: center;
       justify-content: space-between;
     }}
+    .header-left {{
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }}
+    .header-logo {{
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }}
     .header h1 {{
       font-size: 22px;
       font-weight: 600;
@@ -282,9 +294,12 @@ def gerar_html(contratacoes: list[dict], data_consulta: date) -> str:
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>Licitações do Comando da Aeronáutica</h1>
-      <div class="subtitle">Portal Nacional de Contratações Públicas (PNCP) &mdash; {data_fmt}</div>
+    <div class="header-left">
+      <img class="header-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Coat_of_arms_of_the_Brazilian_Air_Force.svg/200px-Coat_of_arms_of_the_Brazilian_Air_Force.svg.png" alt="Gládio Alado - Força Aérea Brasileira">
+      <div>
+        <h1>Licitações do Comando da Aeronáutica</h1>
+        <div class="subtitle">Portal Nacional de Contratações Públicas (PNCP) &mdash; {data_fmt}</div>
+      </div>
     </div>
     <div class="stats">
       <div class="count">{total}</div>
@@ -320,6 +335,66 @@ def gerar_html(contratacoes: list[dict], data_consulta: date) -> str:
 </html>"""
 
 
+def enviar_telegram(arquivo_html: str, total: int, data_consulta: date):
+    """Envia o relatório HTML via Telegram Bot API."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+    if not token or not chat_id:
+        print("TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID não configurados. Envio ignorado.")
+        return
+
+    import http.client
+    import mimetypes
+
+    data_fmt = data_consulta.strftime("%d/%m/%Y")
+    caption = (
+        f"Licitações Comando da Aeronáutica - {data_fmt}\n"
+        f"Total: {total} licitação(ões) encontrada(s)"
+    )
+
+    # Monta requisição multipart para enviar o arquivo
+    boundary = "----PNCPBoundary"
+    nome_arquivo = os.path.basename(arquivo_html)
+
+    with open(arquivo_html, "rb") as f:
+        conteudo_arquivo = f.read()
+
+    corpo = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="chat_id"\r\n\r\n'
+        f"{chat_id}\r\n"
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="caption"\r\n\r\n'
+        f"{caption}\r\n"
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="document"; filename="{nome_arquivo}"\r\n'
+        f"Content-Type: text/html\r\n\r\n"
+    ).encode("utf-8") + conteudo_arquivo + f"\r\n--{boundary}--\r\n".encode("utf-8")
+
+    conn = http.client.HTTPSConnection("api.telegram.org", timeout=30)
+    try:
+        conn.request(
+            "POST",
+            f"/bot{token}/sendDocument",
+            body=corpo,
+            headers={
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(corpo)),
+            },
+        )
+        resp = conn.getresponse()
+        resultado = json.loads(resp.read().decode("utf-8"))
+        if resultado.get("ok"):
+            print("Relatório enviado com sucesso via Telegram!")
+        else:
+            print(f"Erro ao enviar via Telegram: {resultado.get('description', 'Erro desconhecido')}")
+    except Exception as e:
+        print(f"Falha ao conectar com Telegram: {e}")
+    finally:
+        conn.close()
+
+
 def main():
     hoje = datetime.now(FUSO_BRASILIA).date()
     print("=== Licitações do Comando da Aeronáutica - PNCP ===")
@@ -350,6 +425,9 @@ def main():
     with open(arquivo_html, "w", encoding="utf-8") as f:
         f.write(gerar_html(contratacoes, hoje))
     print(f"Relatório HTML salvo em: {arquivo_html}")
+
+    # Envia para o Telegram
+    enviar_telegram(arquivo_html, len(contratacoes), hoje)
 
 
 if __name__ == "__main__":
